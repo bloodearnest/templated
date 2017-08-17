@@ -16,12 +16,16 @@ env/bin/pip:
 	env/bin/pip install -U pip
 	env/bin/pip install $(DEPS)
 
+env/bin/py.test:
+	env/bin/pip install pytest
+
 clean:
 	rm -rf build env contemplate
 
 .PHONY: test
-test: contemplate env/bin/pip 
-	./tests.sh
+test: contemplate env/bin/pip env/bin/py.test
+	#./tests.sh
+	env/bin/py.test tests.py
 
 debug:
 	EXEC="env/bin/python contemplate.py" ./tests.sh

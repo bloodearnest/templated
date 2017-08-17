@@ -15,10 +15,14 @@ def have_stdin():
 
 def parse_envfile(env, envfile):
     for line in envfile:
-        if line[0] == '#':
+        line = line.strip()
+        if not line:
             continue
-        line = string.Template(line.strip()).substitute(env)
-        left, _, right = line.partition('=')
+        var, _, comment = line.partition('#')
+        if not var:
+            continue
+        rendered = string.Template(var.strip()).substitute(env)
+        left, _, right = rendered.partition('=')
         env[left] = right
 
 

@@ -1,4 +1,21 @@
 Simple tool to render a jinja2 template from a yaml context
 
 
-echo context.yaml | ./templated ./template.j2 > template.out
+usage: contemplate [-h] [--context CONTEXT] [--envfile ENVFILE]
+                   [--output OUTPUT]
+                   template [extra [extra ...]]
+
+render a jinja2 template
+
+positional arguments:
+  template              the template file
+  extra                 extra key value pairs (foo=bar)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --context CONTEXT, -c CONTEXT
+                        file to load context data from
+  --envfile ENVFILE, -e ENVFILE
+                        file with environment varibles
+  --output OUTPUT, -o OUTPUT
+                        output file
