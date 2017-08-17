@@ -52,7 +52,7 @@ def get_parser():
     parser.add_argument(
         '--context', '-c',
         type=argparse.FileType('r'),
-        help='file to load context data from',
+        help='file to load context data from. Can also be read from stdin.',
     )
     parser.add_argument(
         '--envfile', '-e',
@@ -68,15 +68,51 @@ def get_parser():
     return parser
 
 
+def write(template, context, output, envfile=None):
+    """Render a template with context to output.
+
+    template can be either a path to a file, for a filelike object, or
+    the template as a string.
+    """
+    if isinstance(template, str):
+        if os.path.exists(template):
+            with open(template) as f:
+                tmpl_content = f.read()
+        else:
+            tmpl_content = template
+    elif hasattr(template, 'read'):
+        tmpl_content = template.read()
+    else:
+        raise Exception("Could not load template {}".format(template))
+
+    tmpl = jinja2.Template(tmpl_content)
+
+    ctx = {'env': os.environ.copy()}
+    if envfile:
+        parse_envfile(ctx['env'], envfile)
+    ctx.update(context)
+    content = tmpl.render(ctx) + '\n'
+
+    if output in (sys.stdout, sys.stderr):
+        output.write(content)
+    else:
+        temp = output + '.contemplate.tmp'
+        try:
+            with open(temp, 'w') as f:
+                f.write(content)
+            os.rename(temp, output)
+        finally:
+            try:
+                os.remove(temp)
+            except FileNotFoundError:
+                pass
+
+
 def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    template = jinja2.Template(args.template.read())
-    context = {'env': os.environ.copy()}
-
-    if args.envfile:
-        parse_envfile(context['env'], args.envfile)
+    context = {}
 
     if have_stdin():
         context.update(parse_yamlfile(sys.stdin))
@@ -85,24 +121,11 @@ def main():
         context.update(parse_yamlfile(args.context))
 
     context.update(args.extra)
-    content = template.render(context) + '\n'
 
     if args.output == '-':
         args.output = sys.stdout
 
-    if args.output in (sys.stdout, sys.stderr):
-        args.output.write(content)
-    else:
-        temp = args.output + '.tmp'
-        try:
-            with open(temp, 'w') as f:
-                f.write(content)
-            os.rename(temp, args.output)
-        finally:
-            try:
-                os.remove(temp)
-            except FileNotFoundError:
-                pass
+    write(args.template, context, args.output, args.envfile)
 
 
 if __name__ == '__main__':
