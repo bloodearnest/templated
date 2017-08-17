@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import os
 import select
 import string
@@ -71,21 +72,9 @@ def get_parser():
 def write(template, context, output, envfile=None):
     """Render a template with context to output.
 
-    template can be either a path to a file, for a filelike object, or
-    the template as a string.
+    template is a string containing the template.
     """
-    if isinstance(template, str):
-        if os.path.exists(template):
-            with open(template) as f:
-                tmpl_content = f.read()
-        else:
-            tmpl_content = template
-    elif hasattr(template, 'read'):
-        tmpl_content = template.read()
-    else:
-        raise Exception("Could not load template {}".format(template))
-
-    tmpl = jinja2.Template(tmpl_content)
+    tmpl = jinja2.Template(template)
 
     ctx = {'env': os.environ.copy()}
     if envfile:
@@ -102,10 +91,8 @@ def write(template, context, output, envfile=None):
                 f.write(content)
             os.rename(temp, output)
         finally:
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 os.remove(temp)
-            except FileNotFoundError:
-                pass
 
 
 def main():
@@ -125,7 +112,7 @@ def main():
     if args.output == '-':
         args.output = sys.stdout
 
-    write(args.template, context, args.output, args.envfile)
+    write(args.template.read(), context, args.output, args.envfile)
 
 
 if __name__ == '__main__':
