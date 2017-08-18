@@ -31,4 +31,4 @@ functional: contemplate
 	./functional-tests.sh
 
 debug-functional:
-	EXEC="env/bin/python contemplate.py" ./tests.sh
+	CONTEMPLATE="env/bin/python contemplate.py" ./functional-tests.sh
