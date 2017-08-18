@@ -1,6 +1,7 @@
 import io
 import os
 import textwrap
+
 import pytest
 import contemplate
 
@@ -59,29 +60,44 @@ def test_atomic_write_rename_fails(tmpdir, monkeypatch):
 
     monkeypatch.setattr(os, 'rename', rename)
     path = str(tmpdir.join('file'))
+    with open(path, 'w') as f:
+        f.write('other')
     with pytest.raises(TestException):
         contemplate.atomic_write(path, 'hi')
     assert not os.path.exists(path + '.contemplate.tmp')
+    assert open(path).read() == 'other'
 
 
-def render_testcases():
-    def envfile():
-        return io.StringIO("TEST=envfile")
-
-    env = {'TEST': 'env'}
-
-    yield {}, None, {}, "'' ''"
-    yield {'test': 'ctx'}, None, {}, "'ctx' ''"
-
-    # test env settings
-    yield {}, None, env, "'' 'env'"
-    yield {}, envfile(), {}, "'' 'envfile'"
-    yield {}, envfile(), env, "'' 'envfile'"
-    yield {'env': {'TEST': 'ctx'}}, envfile(), env, "'' 'ctx'"
+TEMPLATE = "'{{ test }}' '{{ env['TEST'] }}'"
 
 
-@pytest.mark.parametrize('context,envfile,env,expected', render_testcases())
-def test_render(context, envfile, env, expected):
-    template = "'{{ test }}' '{{ env['TEST'] }}'"
-    output = contemplate.render(template, context, envfile, env)
-    assert output == expected + '\n'
+def test_render_none():
+    output = contemplate.render(TEMPLATE, {}, None, {})
+    assert output == "'' ''\n"
+
+
+def test_render_simple():
+    output = contemplate.render(TEMPLATE, {'test': 'ctx'}, None, {})
+    assert output == "'ctx' ''\n"
+
+
+def test_render_envvar():
+    output = contemplate.render(TEMPLATE, {}, None, {'TEST': 'env'})
+    assert output == "'' 'env'\n"
+
+
+def test_render_envfile():
+    output = contemplate.render(TEMPLATE, {}, io.StringIO('TEST=envfile'), {})
+    assert output == "'' 'envfile'\n"
+
+
+def test_render_envfile_overrides_env():
+    output = contemplate.render(
+        TEMPLATE, {}, io.StringIO('TEST=envfile'), {'TEST': 'env'})
+    assert output == "'' 'envfile'\n"
+
+
+def test_render_ctx_overrides_envfile():
+    output = contemplate.render(
+        TEMPLATE, {'env': {'TEST': 'ctx'}}, io.StringIO('TEST=envfile'), {})
+    assert output == "'' 'ctx'\n"

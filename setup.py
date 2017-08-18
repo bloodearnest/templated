@@ -8,8 +8,9 @@ setup(
         'jinja2',
         'pyyaml',
     ],
-    entry_points='''
-        [console_scripts]
-        contemplate=contemplate:main
-    ''',
+    entry_points={
+        'console_scripts': [
+            'contemplate = contemplate:main',
+        ],
+    },
 )
