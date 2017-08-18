@@ -1,5 +1,7 @@
 env
 build
+dist
 contemplate
 contemplate.raw
 __pycache__
+.cache

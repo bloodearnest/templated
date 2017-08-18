@@ -66,37 +66,39 @@ def get_parser():
     )
     parser.add_argument(
         '--output', '-o',
-        default=sys.stdout,
-        help='output file',
+        default='-',
+        help='output file, defaults to stdout',
     )
 
     return parser
 
 
-def write(template, context, output, envfile=None):
+def atomic_write(path, content):
+    temp = path + '.contemplate.tmp'
+    try:
+        with open(temp, 'w') as f:
+            f.write(content)
+        os.rename(temp, path)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(temp)
+
+
+def render(template, context, envfile=None, env=os.environ):
     """Render a template with context to output.
 
     template is a string containing the template.
     """
     tmpl = jinja2.Template(template)
-
-    ctx = {'env': os.environ.copy()}
+    ctx = {'env': env.copy()}
     if envfile:
         parse_envfile(ctx['env'], envfile)
     ctx.update(context)
-    content = tmpl.render(ctx) + '\n'
+    return tmpl.render(ctx) + '\n'
 
-    if output in (sys.stdout, sys.stderr):
-        output.write(content)
-    else:
-        temp = output + '.contemplate.tmp'
-        try:
-            with open(temp, 'w') as f:
-                f.write(content)
-            os.rename(temp, output)
-        finally:
-            with contextlib.suppress(FileNotFoundError):
-                os.remove(temp)
+
+def contemplate(output, template, context, envfile=None, env=os.environ):
+    atomic_write(output, render(template, context, envfile, env))
 
 
 def main():
@@ -113,10 +115,11 @@ def main():
 
     context.update(args.extra)
 
+    content = render(args.template.read(), context, args.envfile)
     if args.output == '-':
-        args.output = sys.stdout
-
-    write(args.template.read(), context, args.output, args.envfile)
+        sys.stdout.write(content)
+    else:
+        atomic_write(args.output, content)
 
 
 if __name__ == '__main__':

@@ -1,11 +1,11 @@
-DEPS = jinja2 pyyaml
 
+.DEFAULT_GOAL := test
 
 contemplate: env/bin/pip contemplate.py build.py Makefile
 	rm -rf build
 	mkdir build
-	env/bin/pip install $(DEPS) -t build
-	rm -rf build/*-info build/*/__pycache__
+	env/bin/pip install . -t build
+	rm -rf build/*-info build/__pycache__ build/*/__pycache__
 	rm build/markupsafe/_speedups*
 	cp contemplate.py build/__main__.py
 	env/bin/python build.py
@@ -14,18 +14,21 @@ contemplate: env/bin/pip contemplate.py build.py Makefile
 env/bin/pip:
 	virtualenv env --python python3
 	env/bin/pip install -U pip
-	env/bin/pip install $(DEPS)
+	env/bin/pip install -e .
 
 env/bin/py.test:
 	env/bin/pip install pytest
 
 clean:
-	rm -rf build env contemplate
+	rm -rf build env dist contemplate contemplate.raw *.egg-info __pycache__
 
-.PHONY: test
-test: contemplate env/bin/pip env/bin/py.test
-	#./tests.sh
+test: unittest functional
+
+unittest: env/bin/pip env/bin/py.test
 	env/bin/py.test tests.py
 
-debug:
+functional: contemplate
+	./functional-tests.sh
+
+debug-functional:
 	EXEC="env/bin/python contemplate.py" ./tests.sh

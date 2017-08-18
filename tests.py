@@ -1,4 +1,5 @@
 import io
+import os
 import textwrap
 import pytest
 import contemplate
@@ -39,3 +40,48 @@ def test_parse_yamlfile():
                 - 2
     """)))
     assert d == {'foo': {'bar': [1, 2]}}
+
+
+def test_atomic_write(tmpdir):
+    path = str(tmpdir.join('file'))
+    contemplate.atomic_write(path, 'hi')
+    assert open(path).read() == 'hi'
+    assert not os.path.exists(path + '.contemplate.tmp')
+
+
+def test_atomic_write_rename_fails(tmpdir, monkeypatch):
+
+    class TestException(Exception):
+        pass
+
+    def rename(x, y):
+        raise TestException()
+
+    monkeypatch.setattr(os, 'rename', rename)
+    path = str(tmpdir.join('file'))
+    with pytest.raises(TestException):
+        contemplate.atomic_write(path, 'hi')
+    assert not os.path.exists(path + '.contemplate.tmp')
+
+
+def render_testcases():
+    def envfile():
+        return io.StringIO("TEST=envfile")
+
+    env = {'TEST': 'env'}
+
+    yield {}, None, {}, "'' ''"
+    yield {'test': 'ctx'}, None, {}, "'ctx' ''"
+
+    # test env settings
+    yield {}, None, env, "'' 'env'"
+    yield {}, envfile(), {}, "'' 'envfile'"
+    yield {}, envfile(), env, "'' 'envfile'"
+    yield {'env': {'TEST': 'ctx'}}, envfile(), env, "'' 'ctx'"
+
+
+@pytest.mark.parametrize('context,envfile,env,expected', render_testcases())
+def test_render(context, envfile, env, expected):
+    template = "'{{ test }}' '{{ env['TEST'] }}'"
+    output = contemplate.render(template, context, envfile, env)
+    assert output == expected + '\n'
