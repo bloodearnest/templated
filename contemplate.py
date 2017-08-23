@@ -2,6 +2,7 @@ import argparse
 import contextlib
 import os
 import select
+import shlex
 import string
 import sys
 
@@ -14,16 +15,22 @@ def have_stdin():
 
 
 def parse_envfile(env, envfile):
-    for line in envfile:
+    for i, line in enumerate(envfile):
         line = line.strip()
         if not line:
             continue
         var, _, comment = line.partition('#')
+        var = var.strip()
         if not var:
             continue
-        rendered = string.Template(var.strip()).substitute(env)
-        left, _, right = rendered.partition('=')
-        env[left] = right
+        parts = shlex.split(var)
+        if parts[0] == 'export':
+            parts = parts[1:]
+        if len(parts) > 1:
+            raise Exception('cannot parse envfile line {}: {}'.format(i, line))
+        left, _, right = parts[0].partition('=')
+        rendered = string.Template(right).substitute(env)
+        env[left] = rendered
 
 
 def parse_yamlfile(stream):

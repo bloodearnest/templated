@@ -1,6 +1,4 @@
 
-.DEFAULT_GOAL := test
-
 contemplate: env/bin/pip contemplate.py build.py Makefile
 	rm -rf build
 	mkdir build

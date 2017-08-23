@@ -9,10 +9,12 @@ import contemplate
 def test_parse_envfile():
     envfile = io.StringIO(textwrap.dedent("""
         X=x
-        # line comment
-        Y=y$X  # envfile substitution
-        Z=z$Z  # env substitution
-        # blank line
+        Y=y$X  # substitution within file
+        Z=z$Z  # base env substitution
+        export foo=bar  # test export prefix
+        quotes="some value"  # test quoted values
+        quotes_single='some value'  # test quoted values
+        # line level comment, then a blank line
 
     """))
     env = {'Z': 'z'}
@@ -21,7 +23,18 @@ def test_parse_envfile():
         'X': 'x',
         'Y': 'yx',
         'Z': 'zz',
+        'foo': 'bar',
+        'quotes': 'some value',
+        'quotes_single': 'some value',
     }
+
+
+def test_parse_envfile_error():
+    envfile = io.StringIO("X=x y")
+    env = {}
+    with pytest.raises(Exception) as e:
+        contemplate.parse_envfile(env, envfile)
+        assert 'X=x y' in str(e)
 
 
 def test_parse_yamlfile():
