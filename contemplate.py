@@ -24,8 +24,6 @@ def parse_envfile(env, envfile):
         if not var:
             continue
         parts = shlex.split(var)
-        if parts[0] == 'export':
-            parts = parts[1:]
         if len(parts) > 1:
             raise Exception('cannot parse envfile line {}: {}'.format(i, line))
         left, _, right = parts[0].partition('=')

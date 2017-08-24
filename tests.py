@@ -11,7 +11,6 @@ def test_parse_envfile():
         X=x
         Y=y$X  # substitution within file
         Z=z$Z  # base env substitution
-        export foo=bar  # test export prefix
         quotes="some value"  # test quoted values
         quotes_single='some value'  # test quoted values
         # line level comment, then a blank line
@@ -23,7 +22,6 @@ def test_parse_envfile():
         'X': 'x',
         'Y': 'yx',
         'Z': 'zz',
-        'foo': 'bar',
         'quotes': 'some value',
         'quotes_single': 'some value',
     }
