@@ -15,7 +15,7 @@ def have_stdin():
 
 
 def parse_envfile(env, envfile):
-    for i, line in enumerate(envfile):
+    for i, line in enumerate(envfile, 1):
         line = line.strip()
         if not line:
             continue

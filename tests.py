@@ -28,11 +28,12 @@ def test_parse_envfile():
 
 
 def test_parse_envfile_error():
-    envfile = io.StringIO("X=x y")
+    envfile = io.StringIO("X=x\nY=y foo")
     env = {}
     with pytest.raises(Exception) as e:
         contemplate.parse_envfile(env, envfile)
         assert 'X=x y' in str(e)
+        assert 'line 2' in str(e)
 
 
 def test_parse_yamlfile():
