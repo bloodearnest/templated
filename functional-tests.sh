@@ -5,7 +5,7 @@ CONTEXT=$(mktemp)
 ENVFILE=$(mktemp)
 RESULT=$(mktemp)
 TEMPLATE=$(mktemp)
-CONTEMPLATE=${CONTEMPLATE:-./contemplate}
+REIFY=${REIFY:-./reify}
 
 OK="\e[32mOK  \e[0m"
 FAIL="\e[31mFAIL\e[0m"
@@ -15,7 +15,7 @@ echo "'{{ test }}' '{{ env['TEST'] }}'" > "$TEMPLATE"
 run()
 {
     # shellcheck disable=SC2068
-    $CONTEMPLATE "$TEMPLATE" $@ -o "$RESULT"
+    $REIFY "$TEMPLATE" $@ -o "$RESULT"
 }
 
 assert()
@@ -24,10 +24,10 @@ assert()
     test "$(<"$RESULT")" = "$2" && echo -e "$OK" || echo -e "$FAIL: $(<"$RESULT") != $2"
 }
 
-$CONTEMPLATE "$TEMPLATE" > "$RESULT"
+$REIFY "$TEMPLATE" > "$RESULT"
 assert "default output is stdout" "'' ''"
 
-$CONTEMPLATE "$TEMPLATE" -o - > "$RESULT"
+$REIFY "$TEMPLATE" -o - > "$RESULT"
 assert "'-' is stdout" "'' ''"
 
 run

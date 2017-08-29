@@ -1,9 +1,8 @@
 Simple tool to render a jinja2 template from a yaml context
 
 
-usage: contemplate [-h] [--context CONTEXT] [--envfile ENVFILE]
-                   [--output OUTPUT]
-                   template [extra [extra ...]]
+usage: reify [-h] [--context CONTEXT] [--envfile ENVFILE] [--output OUTPUT]
+             template [extra [extra ...]]
 
 render a jinja2 template
 
@@ -14,8 +13,9 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --context CONTEXT, -c CONTEXT
-                        file to load context data from
+                        file to load context data from. Can also be read from
+                        stdin.
   --envfile ENVFILE, -e ENVFILE
                         file with environment varibles
   --output OUTPUT, -o OUTPUT
-                        output file
+                        output file, defaults to stdout

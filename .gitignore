@@ -1,7 +1,8 @@
 env
 build
 dist
-contemplate
-contemplate.raw
+reify
+reify.uncompressed
 __pycache__
 .cache
+*.egg-info

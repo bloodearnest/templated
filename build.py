@@ -4,14 +4,15 @@ import pathlib
 import stat
 
 
-def create_archive(source, target, interpreter):
+def create_archive(
+        source, target, interpreter, compression=zipfile.ZIP_DEFLATED):
     root = pathlib.Path(source)
     dest = pathlib.Path(target)
     with open(target, 'wb') as fd:
         fd.write(
             b'#!' + interpreter.encode(sys.getfilesystemencoding()) + b'\n'
         )
-        with zipfile.ZipFile(fd, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+        with zipfile.ZipFile(fd, 'w', compression=compression) as z:
             for child in root.rglob('*'):
                 arcname = str(child.relative_to(root))
                 z.write(str(child), arcname)
@@ -20,4 +21,10 @@ def create_archive(source, target, interpreter):
 
 
 if __name__ == '__main__':
-    create_archive('build', 'contemplate', '/usr/bin/env python3')
+    create_archive('build', 'reify', '/usr/bin/env python3')
+    create_archive(
+        'build',
+        'reify.uncompressed',
+        '/usr/bin/env python3',
+        zipfile.ZIP_STORED
+    )
