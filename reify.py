@@ -46,6 +46,14 @@ def extra(raw_arg):
     return raw_arg.split('=', 1)
 
 
+def octal_mode(raw_arg):
+    try:
+        return int(raw_arg, 8)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            '"{}" is not an octal mode'.format(raw_arg))
+
+
 def get_parser():
     parser = argparse.ArgumentParser(description='render a jinja2 template')
     parser.add_argument(
@@ -72,16 +80,23 @@ def get_parser():
     parser.add_argument(
         '--output', '-o',
         default='-',
-        help='output file, defaults to stdout',
+        help='output file; defaults to stdout',
+    )
+    parser.add_argument(
+        '--mode', '-m',
+        type=octal_mode,
+        help='mode of output file, if not stdout; defaults to 0666 - umask',
     )
 
     return parser
 
 
-def atomic_write(path, content):
+def atomic_write(path, content, mode=None):
     temp = path + '.reify.tmp'
     try:
         with open(temp, 'w') as f:
+            if mode is not None:
+                os.fchmod(f.fileno(), mode)
             f.write(content)
         os.rename(temp, path)
     finally:
@@ -102,8 +117,8 @@ def render(template, context, envfile=None, env=os.environ):
     return tmpl.render(ctx) + '\n'
 
 
-def reify(output, template, context, envfile=None, env=os.environ):
-    atomic_write(output, render(template, context, envfile, env))
+def reify(output, template, context, envfile=None, env=os.environ, mode=None):
+    atomic_write(output, render(template, context, envfile, env), mode=mode)
 
 
 def main():
@@ -120,11 +135,11 @@ def main():
 
     context.update(args.extra)
 
-    content = render(args.template.read(), context, args.envfile)
+    content = render(args.template.read(), context, envfile=args.envfile)
     if args.output == '-':
         sys.stdout.write(content)
     else:
-        atomic_write(args.output, content)
+        atomic_write(args.output, content, mode=args.mode)
 
 
 if __name__ == '__main__':

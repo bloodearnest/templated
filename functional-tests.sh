@@ -24,6 +24,12 @@ assert()
     test "$(<"$RESULT")" = "$2" && echo -e "$OK" || echo -e "$FAIL: $(<"$RESULT") != $2"
 }
 
+assert_mode()
+{
+    echo -n "$1..."
+    test "$(stat -c %a "$RESULT")" = "$2" && echo -e "$OK" || echo -e "$FAIL: $(stat -c %a "$RESULT") != $2"
+}
+
 $REIFY "$TEMPLATE" > "$RESULT"
 assert "default output is stdout" "'' ''"
 
@@ -63,3 +69,9 @@ assert "extra overrides stdin" "'extra' ''"
 
 echo "" | run
 assert "empty stdin" "'' ''"
+
+(umask 022; run)
+assert_mode "default mode is 0666 - umask" 644
+
+(umask 022; run -m 400)
+assert_mode "mode 0400" 400

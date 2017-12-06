@@ -1,5 +1,6 @@
 import io
 import os
+import stat
 import textwrap
 
 import pytest
@@ -60,6 +61,14 @@ def test_atomic_write(tmpdir):
     reify.atomic_write(path, 'hi')
     assert open(path).read() == 'hi'
     assert not os.path.exists(path + '.reify.tmp')
+
+
+def test_atomic_write_mode(tmpdir):
+    path = str(tmpdir.join('file'))
+    reify.atomic_write(path, 'hi', mode=0o400)
+    assert open(path).read() == 'hi'
+    assert not os.path.exists(path + '.reify.tmp')
+    assert stat.S_IMODE(os.stat(path).st_mode) == 0o400
 
 
 def test_atomic_write_rename_fails(tmpdir, monkeypatch):
