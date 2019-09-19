@@ -56,6 +56,34 @@ def test_parse_yamlfile():
     assert d == {'foo': {'bar': [1, 2]}}
 
 
+def test_parse_charm_defaults():
+    assert reify.parse_charm_defaults(io.StringIO("")) == {}
+    assert reify.parse_charm_defaults(io.StringIO("{}")) == {}
+
+    defaults = reify.parse_charm_defaults(io.StringIO(textwrap.dedent("""
+        options:
+            string:
+                default: string
+                type: string
+            int:
+                default: 10
+                type: int
+            float:
+                default: 1.23
+                type: float
+            boolean:
+                default: false
+                type: boolean
+
+    """)))
+    assert defaults == {
+        'string': 'string',
+        'int': 10,
+        'float': 1.23,
+        'boolean': False,
+    }
+
+
 def test_atomic_write(tmpdir):
     path = str(tmpdir.join('file'))
     reify.atomic_write(path, 'hi')

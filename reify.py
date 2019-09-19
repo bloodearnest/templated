@@ -11,10 +11,18 @@ import jinja2
 
 
 def have_stdin():
+    """Do we have input ready to read on stdin?"""
     return select.select([sys.stdin, ], [], [], 0.0)[0]
 
 
 def parse_envfile(env, envfile):
+    """Parse an env file into the supplied environment dict.
+
+    An env file is a list of assignments to env vars that can be sourced or
+    used as a systemd unit EnvironmentFile.  Parsing is done via shlex, leading
+    or trailing comments are handled.  Additionally, simple $ substitution is
+    performed on the RHS value.
+    """
     for i, line in enumerate(envfile, 1):
         line = line.strip()
         if not line:
@@ -32,6 +40,7 @@ def parse_envfile(env, envfile):
 
 
 def parse_yamlfile(stream):
+    """Parse a yaml file, returning empty dict on empty files."""
     ctx = yaml.safe_load(stream)
     if not ctx:
         return {}
@@ -40,13 +49,43 @@ def parse_yamlfile(stream):
     raise Exception('could not load dict from yaml in {}'.format(stream.name))
 
 
+def parse_charm_defaults(stream):
+    """Parse default arguments from a charm config.yaml."""
+    config = yaml.safe_load(stream)
+    if not config:
+        return {}
+    options = config.get('options', {})
+    context = {}
+    for name, cfg in options.items():
+        t = cfg['type']
+        default = cfg.get('default')
+        if default is None:
+            value = None
+        elif t == 'string':
+            value = str(default)
+        elif t == 'int':
+            value = int(default)
+        elif t == 'float':
+            value = float(default)
+        elif t == 'boolean':
+            value = bool(default)
+        else:
+            raise Exception('unknown config type: ' + t)
+
+        context[name] = value
+
+    return context
+
+
 def extra(raw_arg):
+    """argparse argument type for key=value arguments."""
     if '=' not in raw_arg:
         raise argparse.ArgumentTypeError('extra config must be key=value')
     return raw_arg.split('=', 1)
 
 
 def octal_mode(raw_arg):
+    """argparse argument type for modes."""
     try:
         return int(raw_arg, 8)
     except ValueError:
@@ -87,12 +126,22 @@ def get_parser():
         type=octal_mode,
         help='mode of output file, if not stdout; defaults to 0666 - umask',
     )
+    parser.add_argument(
+        '--charm-config',
+        type=argparse.FileType('r'),
+        help='charm config file, default values will be added to template '
+             'context',
+    )
 
     return parser
 
 
 def atomic_write(path, content, mode=None):
-    temp = path + '.reify.tmp'
+    """Attempt at atomic writes.
+
+    For some value of atomic...
+    """
+    temp = path + '.reify.tmp'  # path must be on same fs for atomic rename
     try:
         with open(temp, 'w') as f:
             if mode is not None:
@@ -126,6 +175,9 @@ def main():
     args = parser.parse_args()
 
     context = {}
+
+    if args.charm_config:
+        context.update(parse_charm_defaults(args.charm_config))
 
     if have_stdin():
         context.update(parse_yamlfile(sys.stdin))
