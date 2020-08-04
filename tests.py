@@ -74,6 +74,8 @@ def test_parse_charm_defaults():
             boolean:
                 default: false
                 type: boolean
+            no-type:
+                default: 1.0
 
     """)))
     assert defaults == {
@@ -81,6 +83,7 @@ def test_parse_charm_defaults():
         'int': 10,
         'float': 1.23,
         'boolean': False,
+        'no-type': '1.0',  # defaults to string
     }
 
 
@@ -150,6 +153,18 @@ def test_render_ctx_overrides_envfile():
     output = reify.render(
         TEMPLATE, {'env': {'TEST': 'ctx'}}, io.StringIO('TEST=envfile'), {})
     assert output == "'' 'ctx'\n"
+
+
+def test_render_charm_config():
+    charm_config = io.StringIO(textwrap.dedent("""
+        options:
+            test:
+                default: charm default
+                type: string
+    """))
+
+    output = reify.render(TEMPLATE, {}, None, {}, charm_config)
+    assert output == "'charm default' ''\n"
 
 
 def test_reify_function(tmpdir):

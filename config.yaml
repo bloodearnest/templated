@@ -1,0 +1,4 @@
+options:
+    test:
+        default: charm default
+        type: string

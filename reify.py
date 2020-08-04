@@ -57,7 +57,7 @@ def parse_charm_defaults(stream):
     options = config.get('options', {})
     context = {}
     for name, cfg in options.items():
-        t = cfg['type']
+        t = cfg.get('type', 'string')
         default = cfg.get('default')
         if default is None:
             value = None
@@ -153,21 +153,48 @@ def atomic_write(path, content, mode=None):
             os.remove(temp)
 
 
-def render(template, context, envfile=None, env=os.environ):
+def build_context(context, envfile=None, env=os.environ, charm_config=None):
+    """Build up a template context.
+
+    Initialise with any defaults, and then update with provided context.
+    """
+    # inital context is just env vars
+    # TODO: allow the 'env' name to be customised?
+    # TODO: should we allowlist/blocklist some of these?
+    ctx = {'env': env.copy()}
+    # load any systemd-style envfile into the 'env' var.
+    if envfile:
+        parse_envfile(ctx['env'], envfile)
+    if charm_config:
+        ctx.update(parse_charm_defaults(charm_config))
+    ctx.update(context)
+    return ctx
+
+
+def render(template,
+           context,
+           envfile=None,
+           env=os.environ,
+           charm_config=None):
     """Render a template with context to output.
 
     template is a string containing the template.
     """
+    ctx = build_context(context, envfile, env, charm_config)
     tmpl = jinja2.Template(template)
-    ctx = {'env': env.copy()}
-    if envfile:
-        parse_envfile(ctx['env'], envfile)
-    ctx.update(context)
     return tmpl.render(ctx) + '\n'
 
 
-def reify(output, template, context, envfile=None, env=os.environ, mode=None):
-    atomic_write(output, render(template, context, envfile, env), mode=mode)
+def reify(output,
+          template,
+          context,
+          envfile=None,
+          env=os.environ,
+          charm_config=None,
+          mode=None):
+    """Render template with context to output file."""
+    content = render(template, context, envfile, env, charm_config)
+    atomic_write(output, content, mode=mode)
 
 
 def main():
@@ -175,9 +202,6 @@ def main():
     args = parser.parse_args()
 
     context = {}
-
-    if args.charm_config:
-        context.update(parse_charm_defaults(args.charm_config))
 
     if have_stdin():
         context.update(parse_yamlfile(sys.stdin))
@@ -187,7 +211,12 @@ def main():
 
     context.update(args.extra)
 
-    content = render(args.template.read(), context, envfile=args.envfile)
+    content = render(
+        args.template.read(),
+        context,
+        envfile=args.envfile,
+        charm_config=args.charm_config,
+    )
     if args.output == '-':
         sys.stdout.write(content)
     else:

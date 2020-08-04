@@ -70,6 +70,9 @@ assert "extra overrides stdin" "'extra' ''"
 echo "" | run
 assert "empty stdin" "'' ''"
 
+echo "" | run --charm-config config.yaml
+assert "charm config" "'charm default' ''"
+
 (umask 022; run)
 assert_mode "default mode is 0666 - umask" 644
 
