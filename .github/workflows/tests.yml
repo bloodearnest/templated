@@ -1,0 +1,29 @@
+name: Tests
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python: [ 3.5, 3.6, 3.7, 3.8 ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run unit and functional tests
+        run: |
+          make test
