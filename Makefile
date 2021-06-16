@@ -9,8 +9,8 @@ reify: env/bin/pip reify.py build.py Makefile
 	env/bin/python build.py
 
 env/bin/pip:
-	virtualenv env --python python3
-	env/bin/pip install -U pip
+	python3 -m venv env
+	env/bin/pip install -U pip\<21 # for python 3.5 support
 	env/bin/pip install -e .
 
 env/bin/py.test:
